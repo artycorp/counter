@@ -15,20 +15,20 @@ TARGET = Counter
 TEMPLATE = app
 
 
-SOURCES += main.cpp\
-        mainwindow.cpp \
-    tableviewclicked.cpp \
-    logdialog.cpp \
-    logmodel.cpp
+SOURCES += ./src/main.cpp\
+        ./src/mainwindow.cpp \
+    ./src/tableviewclicked.cpp \
+    ./src/logdialog.cpp \
+    ./src/logmodel.cpp
 
-HEADERS  += mainwindow.h \
-    tableviewclicked.h \
-    logdialog.h \
-    logmodel.h
+HEADERS  += ./h/mainwindow.h \
+    ./h/tableviewclicked.h \
+    ./h/logdialog.h \
+    ./h/logmodel.h
 
-FORMS    += mainwindow.ui \
-    logdialog.ui
+FORMS    += ./ui/mainwindow.ui \
+    ./ui/logdialog.ui
 
 RESOURCES += \
-    resources.qrc
+    ./img/resources.qrc
 
