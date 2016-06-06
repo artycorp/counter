@@ -6,6 +6,8 @@ import sys
 import json
 import datetime
 import argparse
+import os
+import signal
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -17,7 +19,7 @@ from stem.control import Controller
 
 # CONSTANTS
 CITY = u'Perm'
-MAX_SERACHED_PAGE = 50
+MAX_SERACHED_PAGE = 1
 #YANDEX_XPATH = u"//div/div/span/a[@href='{0}']"
 YANDEX_XPATH = u"//a[@href='{0}']"
 #/html/body/div[1]/div[5]/div[4]/div[7]/div[1]/div[3]/div/div[3]/div[2]/div/div/div/div/div[1]/div/h3/a
@@ -43,12 +45,25 @@ search_texts = [
          "site_url": '/remont-stiralnyh-mashin-v-permi/'}]
 
 
+def writeUiLog(fUiLog, searcher, qry, page_cnt, all_cnt, ref):
+    dt = d = datetime.datetime.now()
+    fUiLog.write("{0} | ",format(d.strftime(DATE_FORMAT)))
+    fUiLog.write("{0} | ", searcher)
+    fUiLog.write("{0} | ", qry)
+    fUiLog.write("{0} | ", page_cnt)
+    fUiLog.write("{0} | ", all_cnt)
+    fUiLog.write("{0}\n", ref)
 # settings for TOR connect
 def initPreference():
     profile = webdriver.FirefoxProfile()
     profile.set_preference('network.proxy.type', 1)
     profile.set_preference('network.proxy.socks', '127.0.0.1')
     profile.set_preference('network.proxy.socks_port', 9050)
+
+    #disable image and flash
+    profile.set_preference('permissions.default.stylesheet', 2)
+    profile.set_preference('permissions.default.image', 2)
+    profile.set_preference('dom.ipc.plugins.enabled.libflashplayer.so', 'false')
     return profile
 
 
@@ -60,7 +75,7 @@ def setRegion(browser):
     elem = browser.find_element_by_id("auto")
     elem.click()
 
-    region = browser.find_element_by_xpath("//input[@name='region']")
+    region = browser.find_element_by_xpath("//input[@autocomplete='off']")
 
     region.clear()
     time.sleep(3)
@@ -90,14 +105,14 @@ def submitRegion(browser):
 
 # search query string in yandex
 def findQueryYA(browser, query):
-    search = browser.find_element_by_name("text")
+    search = browser.find_element_by_xpath("//input[@id='text']")
     ActionChains(browser) \
         .send_keys(Keys.HOME) \
         .send_keys(query) \
         .send_keys(Keys.ENTER) \
         .perform()
 
-    search.submit()
+    #search.submit()
 
 
 # search query string in google
@@ -234,17 +249,20 @@ def destroy(browser):
 
 def initYandex(query):
     browser = webdriver.Firefox(initPreference())
+    try:
+        browser.maximize_window()
+        browser.get('https://www.yandex.ru/')
 
-    browser.maximize_window()
-    browser.get('https://www.yandex.ru/')
-
-    setRegion(browser)
-    time.sleep(3)
-    submitRegion(browser)
-    time.sleep(3)
-    findQueryYA(browser, query)
-    browser.implicitly_wait(2)
-    return browser
+        setRegion(browser)
+        time.sleep(3)
+        submitRegion(browser)
+        time.sleep(3)
+        #TODO not need now?
+        findQueryYA(browser, query)
+        browser.implicitly_wait(2)
+    except:
+        return False, browser
+    return True, browser
 
 
 def initGoogle(query):
@@ -263,14 +281,16 @@ def getCntElems(browser,query):
     return len(elems)
 
 
-def searchYandex(search_texts, file):
+def searchYandex(search_texts, file, fUiLog):
     for search_text in search_texts:
         browser = None
         try:
             query = search_text['text']
             link = search_text['site_url']
             urls = search_text['urls']
-            browser = initYandex(query)
+            result, browser = initYandex(query)
+            if not result:
+                raise Exception('error init Yandex search')
 
             while checkNeedTorRestart(browser):
                 destroy(browser)
@@ -289,6 +309,7 @@ def searchYandex(search_texts, file):
                 except:
                     print("error in searchOnPage")
                 if bFound:
+                    writeUiLog(fUiLog=fUiLog,searcher="Yandex",qry=query,page_cnt="0",  all_cnt="100", ref=link)
                     break
                 iPage += 1
                 try:
@@ -299,6 +320,7 @@ def searchYandex(search_texts, file):
 
             if iPage == MAX_SERACHED_PAGE:
                 d = datetime.datetime.now()
+                writeUiLog(fUiLog=fUiLog, searcher="NOT found on Yandex", qry=query, page_cnt="0", all_cnt="100", ref=link)
                 message = u"{0} link '{1}' NOT Found in yandex on pages {2} by query '{3}'\n".format(
                     d.strftime(DATE_FORMAT), u''.join(urls), str(iPage), query)
                 file.write(message.encode('utf8'))
@@ -311,6 +333,7 @@ def searchYandex(search_texts, file):
         except:
             if browser != None:
                 destroy(browser)
+            #os.kill(browser.binary.process.pid,signal.SIGKILL)
             print "Unexpected error on yandex search:", sys.exc_info()[0]
 
 
@@ -460,6 +483,7 @@ def main():
 
     for i in range(0, args.count):
         print("iteration {0}\n".format(str(i)))
+        fUiLog = open("ui.log", "a", bufsize)
         file = open("result.log", "a", bufsize)
         d = datetime.datetime.now()
         file.write("----------------------------\n")
@@ -467,13 +491,14 @@ def main():
 
         try:
             search_texts = loadSettings()
+            searchYandex(search_texts, file, fUiLog)
+            #searchGoogle(search_texts, file)
         except:
             print("Cannot read {0}".format(SETTINGS_FILE))
-        searchYandex(search_texts, file)
-        searchGoogle(search_texts, file)
         d = datetime.datetime.now()
         file.write("end at {0}\n".format(d.strftime(DATE_FORMAT)))
         file.write("++++++++++++++++++++++++++++\n")
+        fUiLog.close()
         file.close()
 
 
