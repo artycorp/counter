@@ -2,7 +2,7 @@
 #define LOGDIALOG_H
 
 #include <QDialog>
-#include <logmodel.h>
+#include <h/logmodel.h>
 
 namespace Ui {
 class LogDialog;

@@ -1,4 +1,4 @@
-#include "logdialog.h"
+#include "h/logdialog.h"
 #include "ui_logdialog.h"
 
 LogDialog::LogDialog(QWidget *parent) :

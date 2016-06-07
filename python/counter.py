@@ -19,7 +19,7 @@ from stem.control import Controller
 
 # CONSTANTS
 CITY = u'Perm'
-MAX_SERACHED_PAGE = 1
+MAX_SERACHED_PAGE = 50
 #YANDEX_XPATH = u"//div/div/span/a[@href='{0}']"
 YANDEX_XPATH = u"//a[@href='{0}']"
 #/html/body/div[1]/div[5]/div[4]/div[7]/div[1]/div[3]/div/div[3]/div[2]/div/div/div/div/div[1]/div/h3/a
@@ -44,15 +44,19 @@ search_texts = [
      }, {"text": u'ремонт холодильников', "urls": [u"http://perm-remont.com/"],
          "site_url": '/remont-stiralnyh-mashin-v-permi/'}]
 
+fUiLog = open("ui.log", "a", 0)
 
+#TODO перепилить
 def writeUiLog(fUiLog, searcher, qry, page_cnt, all_cnt, ref):
     dt = d = datetime.datetime.now()
-    fUiLog.write("{0} | ",format(d.strftime(DATE_FORMAT)))
-    fUiLog.write("{0} | ", searcher)
-    fUiLog.write("{0} | ", qry)
-    fUiLog.write("{0} | ", page_cnt)
-    fUiLog.write("{0} | ", all_cnt)
-    fUiLog.write("{0}\n", ref)
+    fUiLog.write("{0} | ".format(d.strftime(DATE_FORMAT)))
+    fUiLog.write("{0} | ".format(searcher.encode("utf8")))
+    fUiLog.write("{0} | ".format(qry.encode("utf8")))
+    fUiLog.write("{0} | ".format(page_cnt))
+    fUiLog.write("{0} | ".format(all_cnt))
+    fUiLog.write("{0}\n".format(ref.encode("utf8")))
+
+
 # settings for TOR connect
 def initPreference():
     profile = webdriver.FirefoxProfile()
@@ -75,7 +79,7 @@ def setRegion(browser):
     elem = browser.find_element_by_id("auto")
     elem.click()
 
-    region = browser.find_element_by_xpath("//input[@autocomplete='off']")
+    region = browser.find_element_by_xpath("//input[@name='name']")
 
     region.clear()
     time.sleep(3)
@@ -205,6 +209,7 @@ def searchOnPage(browser, xpath, urls, iPage, query, link, file, cntElems):
                 message = u"{0} link '{1}' Found in yandex on page {2} with Pos = {3} summaryPos = {4} by query '{5}'\n".format(d.strftime(DATE_FORMAT),
                                                                                                 url, str(iPage),posInPage, str(posInPages), query)
                 file.write(message.encode('utf8'))
+                writeUiLog(fUiLog=fUiLog, searcher="Yandex", qry=query, page_cnt=posInPage, all_cnt=posInPages, ref=link)
                 print(message)
                 break
         i += 1
@@ -309,7 +314,6 @@ def searchYandex(search_texts, file, fUiLog):
                 except:
                     print("error in searchOnPage")
                 if bFound:
-                    writeUiLog(fUiLog=fUiLog,searcher="Yandex",qry=query,page_cnt="0",  all_cnt="100", ref=link)
                     break
                 iPage += 1
                 try:
@@ -320,7 +324,7 @@ def searchYandex(search_texts, file, fUiLog):
 
             if iPage == MAX_SERACHED_PAGE:
                 d = datetime.datetime.now()
-                writeUiLog(fUiLog=fUiLog, searcher="NOT found on Yandex", qry=query, page_cnt="0", all_cnt="100", ref=link)
+                writeUiLog(fUiLog=fUiLog, searcher="NOT found on Yandex", qry=query, page_cnt=iPage, all_cnt=100, ref=link)
                 message = u"{0} link '{1}' NOT Found in yandex on pages {2} by query '{3}'\n".format(
                     d.strftime(DATE_FORMAT), u''.join(urls), str(iPage), query)
                 file.write(message.encode('utf8'))
@@ -478,12 +482,14 @@ def main():
     bufsize = 0
     parser = argparse.ArgumentParser()
     parser.add_argument("count",type=int, help="interation count")
+    parser.add_argument("depth", type=int, help="max page search")
     args = parser.parse_args()
-    print args.count
-
+    #print args.count
+    global MAX_SERACHED_PAGE
+    MAX_SERACHED_PAGE = args.depth
     for i in range(0, args.count):
         print("iteration {0}\n".format(str(i)))
-        fUiLog = open("ui.log", "a", bufsize)
+
         file = open("result.log", "a", bufsize)
         d = datetime.datetime.now()
         file.write("----------------------------\n")
@@ -498,8 +504,9 @@ def main():
         d = datetime.datetime.now()
         file.write("end at {0}\n".format(d.strftime(DATE_FORMAT)))
         file.write("++++++++++++++++++++++++++++\n")
-        fUiLog.close()
+
         file.close()
+    fUiLog.close()
 
 
 if __name__ == "__main__":

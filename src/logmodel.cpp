@@ -1,11 +1,11 @@
-#include "logmodel.h"
+#include "h/logmodel.h"
 #include <QFile>
 #include <QTextStream>
 #include <QVector>
 #include <QStringList>
 
 LogVector* readFile(){
-    QFile f("ui.log");
+    QFile f("./python/ui.log");
     LogVector* v = new LogVector();
 
     f.open(QIODevice::ReadOnly);

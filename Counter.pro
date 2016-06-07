@@ -15,7 +15,7 @@ TARGET = Counter
 TEMPLATE = app
 
 
-SOURCES += ./src/main.cpp\
+SOURCES += ./src/main.cpp \
         ./src/mainwindow.cpp \
     ./src/tableviewclicked.cpp \
     ./src/logdialog.cpp \

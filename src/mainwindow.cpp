@@ -1,6 +1,6 @@
-#include "mainwindow.h"
+#include "h/mainwindow.h"
 #include "ui_mainwindow.h"
-#include "logdialog.h"
+#include "h/logdialog.h"
 #include "ui_logdialog.h"
 #include <qdebug.h>
 #include <qfile.h>
@@ -32,7 +32,7 @@ void ReadJson(QTableWidget* table)
     //QString val;
     bool ok;
     QFile file;
-    file.setFileName("settings.json");
+    file.setFileName("./python/settings.json");
     file.open(QIODevice::ReadOnly | QIODevice::Text);
     QJson::Parser parser;
     QVariantMap res = parser.parse(&file,&ok).toMap();
@@ -65,7 +65,7 @@ void WriteJson(QTableWidget* table)
     QFile file;
     int cntRow = table->rowCount();
 
-    file.setFileName("settings.json");
+    file.setFileName("./python/settings.json");
     file.open(QIODevice::WriteOnly);
     QTextStream out(&file);
     //out.setCodec("UTF-8");
@@ -146,7 +146,9 @@ void MainWindow::on_btRun_clicked()
     p.kill();
     QStringList params;
     qDebug() << ui->spinCnt->value();
-    params << "counter.py" << QString::number(ui->spinCnt->value());
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    env.insert("PWD", env.value("PWD") + "/python");
+    params << "./python/counter.py" << QString::number(ui->spinCnt->value()) << QString::number(ui->spinDepth->value());
     qDebug() << params;
     p.start("python",params);
     //p.waitForFinished(-1);
