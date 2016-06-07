@@ -25,7 +25,7 @@ YANDEX_XPATH = u"//a[@href='{0}']"
 #/html/body/div[1]/div[5]/div[4]/div[7]/div[1]/div[3]/div/div[3]/div[2]/div/div/div/div/div[1]/div/h3/a
 #GOOGLE_XPATH = u"//div[@class='rc']/h3/a[@href='{0}']"
 GOOGLE_XPATH = u"//div/h3/a[@href='{0}']"
-SETTINGS_FILE = "settings.json"
+SETTINGS_FILE = os.getenv('COUNTER_SETTINGS_PATH','') + "settings.json"
 DATE_FORMAT = "%d/%m/%Y %H:%M:%S"
 
 # page = 7

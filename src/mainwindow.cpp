@@ -147,9 +147,10 @@ void MainWindow::on_btRun_clicked()
     QStringList params;
     qDebug() << ui->spinCnt->value();
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    env.insert("PWD", env.value("PWD") + "/python");
+    env.insert("COUNTER_SETTINGS_PATH", "./python/");
     params << "./python/counter.py" << QString::number(ui->spinCnt->value()) << QString::number(ui->spinDepth->value());
     qDebug() << params;
+    p.setProcessEnvironment(env);
     p.start("python",params);
     //p.waitForFinished(-1);
     QString p_stdout = p.readAll();
