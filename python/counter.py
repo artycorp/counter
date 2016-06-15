@@ -7,7 +7,7 @@ import json
 import datetime
 import argparse
 import os
-import signal
+import logging
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -104,7 +104,7 @@ def submitRegion(browser):
             .send_keys_to_element(btn, Keys.ENTER) \
             .perform()
     except:
-        print("!")
+        logging.error("Submit Region error")
 
 
 # search query string in yandex
@@ -124,13 +124,13 @@ def findQueryGoogle(browser, query):
     try:
         search = browser.find_elements_by_xpath("//input")
     except:
-        print('Not found1!!!!!!')
+        logging.error("findQueryGoogle error find element")
     i = 1
     for s in search:
         try:
             time.sleep(4)
             i += 1
-            print(str(i) + " text is " + s.text)
+            logging.debug(str(i) + " text is " + s.text)
             ActionChains(browser) \
                 .click(s) \
                 .key_down(Keys.CONTROL, s) \
@@ -140,7 +140,7 @@ def findQueryGoogle(browser, query):
                 .perform()
             s.submit()
         except:
-            print "err"
+            logging.error("findQueryGoogle error find element")
             # .send_keys_to_element(query, search) \
             # .send_keys_to_element(Keys.ENTER, search) \
 
@@ -151,7 +151,7 @@ def searchSite(browser, xpath_query, url, link, file):
     try:
         sites = browser.find_elements_by_xpath(xpath_query.format(url))
     except:
-        print(u"Error in find_elements_by_xpath by url='{0}'".format(url))
+        logging.error(u"Error in find_elements_by_xpath by url='{0}'".format(url))
         sites = None
     for site in sites:
         try:
@@ -172,10 +172,10 @@ def searchSite(browser, xpath_query, url, link, file):
             try:
                 browser.switch_to_window(browser.window_handles[0])
             except:
-                print("bla!")
-            message = "ERROR Cannot click {0} by link {1}\n".format(url,link)
+                logging.error("Error switching window on Serach site")
+            message = "ERROR Cannot click {0} by link {1}\n".format(url, link)
             file.write(message.encode("utf8"))
-            print(message)
+            logging.error(message.encode("utf8"))
             break
     return {"res":bFound,"href":href}
 
@@ -188,8 +188,8 @@ def searchOnPage(browser, xpath, urls, iPage, query, link, file, cntElems):
         for url in urls:
             posInPage = -1
             try:
-                #elems = browser.find_elements_by_xpath("//div/div/span/a[@href='{0}']/../../..".format(url))
-                elems = browser.find_elements_by_xpath("//a[@href='http://master-catalog.ru/catalog/perm']/../../..".format(url))
+                elems = browser.find_elements_by_xpath("//div/div/span/a[@href='{0}']/../../..".format(url))
+                #elems = browser.find_elements_by_xpath("//a[@href='http://master-catalog.ru/catalog/perm']/../../..".format(url))
 
                 for elem in elems:
                     try:
@@ -198,9 +198,9 @@ def searchOnPage(browser, xpath, urls, iPage, query, link, file, cntElems):
                         #TODO грязный хак, чтобы обрабатывался только 1й элемент, у второго нет атрибута data-cid
                         break;
                     except:
-                        print("Error in get data-cid")
+                        logging.error("Error in get data-cid")
             except:
-                print(u"Error in find posInPage format url={0}".format(url))
+                logging.error(u"Error in find posInPage format url={0}".format(url))
             result = searchSite(browser=browser, xpath_query=xpath, url=url, link=link, file=file)
             bFound = result["res"]
             if bFound:
@@ -210,7 +210,7 @@ def searchOnPage(browser, xpath, urls, iPage, query, link, file, cntElems):
                                                                                                 url, str(iPage),posInPage, str(posInPages), query)
                 file.write(message.encode('utf8'))
                 writeUiLog(fUiLog=fUiLog, searcher="Yandex", qry=query, page_cnt=posInPage, all_cnt=posInPages, ref=link)
-                print(message)
+                logging.debug(message)
                 break
         i += 1
     return bFound
@@ -228,7 +228,7 @@ def nextPage(browser):
             return
     except:
         # TODO change print to syslog
-        print("oups next not found")
+        logging.error("nextPage not found")
 
 
 # check yandex errors
@@ -240,11 +240,9 @@ def checkNeedTorRestart(browser):
 # restart TOR
 def restartTor():
     with Controller.from_port(port=9051) as controller:
-    	#print("test1")
         controller.authenticate("Den135790")
-        #print("test2")
         controller.signal(Signal.NEWNYM)
-        #print("test3")
+
 
 
 def destroy(browser):
@@ -312,14 +310,14 @@ def searchYandex(search_texts, file, fUiLog):
                     bFound = searchOnPage(browser=browser, xpath=YANDEX_XPATH, urls=urls, iPage=iPage,
                                       query=query, link=link, file=file,cntElems = cntElems)
                 except:
-                    print("error in searchOnPage")
+                    logging.error("error in searchOnPage")
                 if bFound:
                     break
                 iPage += 1
                 try:
                     cntElems += getCntElems(browser,"//div[@data-cid]")
                 except:
-                    print("error in getCntElems")
+                    logging.error("error in getCntElems")
                 nextPage(browser)
 
             if iPage == MAX_SERACHED_PAGE:
@@ -328,7 +326,7 @@ def searchYandex(search_texts, file, fUiLog):
                 message = u"{0} link '{1}' NOT Found in yandex on pages {2} by query '{3}'\n".format(
                     d.strftime(DATE_FORMAT), u''.join(urls), str(iPage), query)
                 file.write(message.encode('utf8'))
-                print(message)
+                logging.debug(message)
 
             # move to windows
             # for handle in browser.window_handles:
@@ -338,7 +336,7 @@ def searchYandex(search_texts, file, fUiLog):
             if browser != None:
                 destroy(browser)
             #os.kill(browser.binary.process.pid,signal.SIGKILL)
-            print "Unexpected error on yandex search:", sys.exc_info()[0]
+            logging.error("Unexpected error on yandex search:" + sys.exc_info()[0])
 
 
 def submitGoogle(browser):
@@ -350,7 +348,7 @@ def submitGoogle(browser):
             .send_keys_to_element(btn, Keys.ENTER) \
             .perform()
     except:
-        print("!")
+        logging.error("submitGoogle")
 
 
 def nextPageGoogle(browser):
@@ -365,7 +363,7 @@ def nextPageGoogle(browser):
             return
     except:
         # TODO change print to syslog
-        print("oups next not found")
+        logging.error("oups nextPageGoogle not found")
 
 
 def isCaptcha(browser, xpath):
@@ -391,17 +389,14 @@ def findInSite(browser, link):
         movesOnPage(browser)
     except:
         # TODO change print to syslog
-        print("Cannot click " + link + "!")
+        logging.error("Cannot click " + link + "!")
 
 def posOnPageInGoogle(browser, xpath_query, href):
-    #print ("href is {0}\n".format(href))
-    #print("X")
+
     elems = browser.find_elements_by_xpath('//div/h3/a')
     i = 0
-    #print("Y")
+
     for elem in elems:
-    	#print("Z")
-        #print (u"!!!!href is {0}\n".format(elem.get_attribute("href")))
         if elem.get_attribute("href") == href:
             return i
         i += 1
@@ -416,11 +411,11 @@ def searchGoogle(search_texts, file):
             browser = initGoogle(query)
 
             while isCaptcha(browser, "//div[contains(.,'To continue, please type the characters below:')]"):
-                print("Found CAPTCHA, try restart")
+                logging.debug("Found CAPTCHA, try restart")
                 destroy(browser)
                 browser = initGoogle(query)
                 restartTor()
-            print("CAPTCHA, not found")
+            logging.debug("CAPTCHA, not found")
 
             iPage = 1
             cntElems = 0
@@ -434,7 +429,7 @@ def searchGoogle(search_texts, file):
                         message = u"{0} link '{1}' Found in google on page {2} posInPage = {5} summaryPos={3} by query '{4}'\n".format(
                             d.strftime(DATE_FORMAT), url, str(iPage),str(cntElems), query, str(posInPage))
                         file.write(message.encode("utf8"))
-                        print(message)
+                        logging.debug(message)
                         time.sleep(10)
                         break
                 nextPageGoogle(browser)
@@ -443,21 +438,21 @@ def searchGoogle(search_texts, file):
                 cntElems += getCntElems(browser=browser, query= "//div[@class ='g']")
                 while isCaptcha(browser, "//div[contains(.,'To continue, please type the characters below:')]"):
                     try:
-                        print("Found CAPTCHA, try restart")
+                        logging.debug("Found CAPTCHA, try restart")
                         destroy(browser)
                         browser = initGoogle(query)
                         restartTor()
                         iPage = 1
                         cntElems = 0
                     except:
-                        print("try restart")
+                        logging.error("try restart")
 
             if iPage == MAX_SERACHED_PAGE:
                 d = datetime.datetime.now()
                 message = u"{0} link '{1}' NOT Found in google on pages {2} by query '{3}'\n".format(
                     d.strftime(DATE_FORMAT), url, str(iPage), query)
                 file.write(message.encode("utf8"))
-                print(message)
+                logging.debug(message)
                 # print("iPage = " + str(iPage))
 
             destroy(browser)
@@ -466,8 +461,9 @@ def searchGoogle(search_texts, file):
                 if browser != None:
                     destroy(browser)
             except:
+                logging.error("cannot destroy browser search in google")
                 continue
-            print "Unexpected error on google search:", sys.exc_info()[0]
+            logging.error("Unexpected error on google search:" + sys.exc_info()[0])
 
 
 def loadSettings():
@@ -484,7 +480,9 @@ def main():
     parser.add_argument("count",type=int, help="interation count")
     parser.add_argument("depth", type=int, help="max page search")
     args = parser.parse_args()
+    logging.basicConfig(level=logging.DEBUG, filename=u'mylog.log')
     #print args.count
+
     global MAX_SERACHED_PAGE
     MAX_SERACHED_PAGE = args.depth
     for i in range(0, args.count):
@@ -498,7 +496,7 @@ def main():
         try:
             search_texts = loadSettings()
             searchYandex(search_texts, file, fUiLog)
-            #searchGoogle(search_texts, file)
+            searchGoogle(search_texts, file)
         except:
             print("Cannot read {0}".format(SETTINGS_FILE))
         d = datetime.datetime.now()
