@@ -495,10 +495,17 @@ def main():
 
         try:
             search_texts = loadSettings()
-            searchYandex(search_texts, file, fUiLog)
-            searchGoogle(search_texts, file)
         except:
             print("Cannot read {0}".format(SETTINGS_FILE))
+        try:
+            searchYandex(search_texts, file, fUiLog)
+        except:
+            logging.error("Error in yandex search")
+        try:
+            searchGoogle(search_texts, file)
+        except:
+            logging.error("Error in google search")
+
         d = datetime.datetime.now()
         file.write("end at {0}\n".format(d.strftime(DATE_FORMAT)))
         file.write("++++++++++++++++++++++++++++\n")
@@ -508,4 +515,7 @@ def main():
 
 
 if __name__ == "__main__":
+    print("COUNTER_SETTINGS_PATH = " + os.getenv("COUNTER_SETTINGS_PATH",""))
+    print("PATH = " + os.getenv("PATH",""))
+    print("PWD = " + os.getenv("PWD", ""))
     main()
