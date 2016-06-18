@@ -15,6 +15,8 @@ from selenium.webdriver.common.action_chains import ActionChains
 from stem import Signal
 from stem.control import Controller
 
+from rfoo.utils import rconsole
+
 # from selenium.common.exceptions import NoSuchElementException
 
 # CONSTANTS
@@ -44,7 +46,7 @@ search_texts = [
      }, {"text": u'ремонт холодильников', "urls": [u"http://perm-remont.com/"],
          "site_url": '/remont-stiralnyh-mashin-v-permi/'}]
 
-fUiLog = open("ui.log", "a", 0)
+fUiLog = open(os.getenv('COUNTER_SETTINGS_PATH','') + "ui.log", "a", 0)
 
 #TODO перепилить
 def writeUiLog(fUiLog, searcher, qry, page_cnt, all_cnt, ref):
@@ -272,7 +274,7 @@ def initGoogle(query):
     browser = webdriver.Firefox(initPreference())
     browser.maximize_window()
     browser.delete_all_cookies()
-    browser.get('https://www.yandex.ru')
+    #browser.get('https://www.yandex.ru')
     browser.get(u'https://www.google.ru?q=' + query)
     time.sleep(8)
     submitGoogle(browser)
@@ -295,15 +297,17 @@ def searchYandex(search_texts, file, fUiLog):
             if not result:
                 raise Exception('error init Yandex search')
 
-            while checkNeedTorRestart(browser):
-                destroy(browser)
-                browser = initYandex(query)
-                restartTor()
-
             iPage = 1
             bFound = False
             cntElems = 0 # количество элементов для поиска на странице
             while iPage < MAX_SERACHED_PAGE:
+                while checkNeedTorRestart(browser):
+                    destroy(browser)
+                    browser = initYandex(query)
+                    restartTor()
+                    # start from beginning
+                    iPage = 1
+                    cntElems = 0
                 time.sleep(3)
 
                 try:
@@ -333,11 +337,10 @@ def searchYandex(search_texts, file, fUiLog):
             #    browser.switch_to.window(handle)
             destroy(browser)
         except:
-            if browser != None:
-                destroy(browser)
             #os.kill(browser.binary.process.pid,signal.SIGKILL)
             logging.error("Unexpected error on yandex search:" + sys.exc_info()[0])
-
+        if browser != None:
+            destroy(browser)
 
 def submitGoogle(browser):
     btn = browser.find_element_by_xpath("//button[@type='submit']")
@@ -488,7 +491,7 @@ def main():
     for i in range(0, args.count):
         print("iteration {0}\n".format(str(i)))
 
-        file = open("result.log", "a", bufsize)
+        file = open(os.getenv('COUNTER_SETTINGS_PATH','') + "result.log", "a", bufsize)
         d = datetime.datetime.now()
         file.write("----------------------------\n")
         file.write("start at {0}\n".format(d.strftime(DATE_FORMAT)))
@@ -502,7 +505,8 @@ def main():
         except:
             logging.error("Error in yandex search")
         try:
-            searchGoogle(search_texts, file)
+            #TODO uncomment this in release
+            #searchGoogle(search_texts, file)
         except:
             logging.error("Error in google search")
 
@@ -518,4 +522,5 @@ if __name__ == "__main__":
     print("COUNTER_SETTINGS_PATH = " + os.getenv("COUNTER_SETTINGS_PATH",""))
     print("PATH = " + os.getenv("PATH",""))
     print("PWD = " + os.getenv("PWD", ""))
+    rconsole.spawn_server()
     main()
