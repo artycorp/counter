@@ -286,9 +286,8 @@ def getCntElems(browser,query):
     return len(elems)
 
 
-def searchYandex(search_texts, file, fUiLog):
+def searchYandex(search_texts, file, fUiLog, browser):
     for search_text in search_texts:
-        browser = None
         try:
             query = search_text['text']
             link = search_text['site_url']
@@ -405,7 +404,7 @@ def posOnPageInGoogle(browser, xpath_query, href):
         i += 1
     return -1
 
-def searchGoogle(search_texts, file):
+def searchGoogle(search_texts, file, browser):
     for search_text in search_texts:
         browser = None
         try:
@@ -500,13 +499,15 @@ def main():
             search_texts = loadSettings()
         except:
             print("Cannot read {0}".format(SETTINGS_FILE))
+        browser = None
         try:
-            searchYandex(search_texts, file, fUiLog)
+            searchYandex(search_texts, file, fUiLog, browser=browser)
         except:
             logging.error("Error in yandex search")
         try:
             #TODO uncomment this in release
-            #searchGoogle(search_texts, file)
+            print("")
+            #searchGoogle(search_texts, file, browser=browser)
         except:
             logging.error("Error in google search")
 

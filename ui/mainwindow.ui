@@ -351,7 +351,7 @@
   <customwidget>
    <class>TableViewClicked</class>
    <extends>QWidget</extends>
-   <header location="global">tableviewclicked.h</header>
+   <header location="global">h/tableviewclicked.h</header>
   </customwidget>
  </customwidgets>
  <resources>

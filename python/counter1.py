@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import time
 import sys
 import json
@@ -15,15 +18,25 @@ from stem.control import Controller
 from rfoo.utils import rconsole
 
 SETTINGS_FILE = os.getenv('COUNTER_SETTINGS_PATH','') + "settings.json"
+DATE_FORMAT = "%d/%m/%Y %H:%M:%S"
 
 class Search:
     browser = None
     profile = None
     query = None
+    urls = None
     CITY = u'Perm'
+    link = None
+    iPage = 1 # page number on search
+    cntElems = 0 # количество элементов для поиска на странице
+    MAX_SERACHED_PAGE = 50
+    YANDEX_XPATH = u"//a[@href='{0}']"
+
 
     def __init__(self, query):
         self.query = query["text"]
+        self.urls = query["urls"]
+        self.link = query["site_url"]
         self.browser = None
 
 
@@ -67,9 +80,34 @@ class Search:
 
     def Search(self):
         if self.checkNeedTorRestart():
-            
-        self.findQueryYA()
+            return False
 
+        self.findQueryYA()
+        self.browser.implicitly_wait(2)
+        while self.iPage < self.MAX_SERACHED_PAGE:
+            if self.searchOnPage(self.YANDEX_XPATH):
+                print("FOUND!!!\n")
+                break
+            self.iPage += 1
+            self.nextPage()
+            if self.checkNeedTorRestart():
+                print ("need restart!\n")
+                return False
+        print("not found!!!\n")
+
+    def nextPage(self):
+        nexts = self.browser.find_elements_by_xpath(u"//a[contains(text(),'дал')]")
+
+        try:
+            for next in nexts:
+                ActionChains(self.browser) \
+                    .move_to_element(next) \
+                    .send_keys_to_element(next, Keys.ENTER) \
+                    .perform()
+                return
+        except:
+            # TODO change print to syslog
+            logging.error("nextPage not found")
     # set location to Perm
     def setRegion(self):
         self.browser.get('https://tune.yandex.ru/region/?retpath=https%3A%2F%2Fyandex.ru%2F%3Fdomredir%3D1&amp;laas=1')
@@ -118,11 +156,102 @@ class Search:
         with Controller.from_port(port=9051) as controller:
             controller.authenticate("Den135790")
             controller.signal(Signal.NEWNYM)
+        self.iPage = 1
+        self.cntElems = 0
 
     # check yandex errors
     def checkNeedTorRestart(self):
         res = self.browser.find_elements_by_xpath(u"//p[contains(text(),'Нам очень жаль')]")
         return len(res) > 0
+
+    def searchOnPage(self, xpath):
+        i = 1
+        bFound = False
+        while i < 2 and not bFound:
+            self.browser.execute_script("window.scrollTo(0, " + str(200 * i) + ");")
+            for url in self.urls:
+                posInPage = -1
+                try:
+                    elems = self.browser.find_elements_by_xpath("//div/div/span/a[@href='{0}']/../../..".format(url))
+
+                    for elem in elems:
+                        try:
+                            posInPage = elem.get_attribute("data-cid")
+                            #TODO грязный хак, чтобы обрабатывался только 1й элемент, у второго нет атрибута data-cid
+                            break;
+                        except:
+                            logging.error("Error in get data-cid")
+                except:
+                    logging.error(u"Error in find posInPage format url={0}".format(url))
+                result = self.searchSite(url=url, xpath_query = xpath, link = self.link)
+                bFound = result["res"]
+                if bFound:
+                    posInPages = int(posInPage) + self.cntElems
+                    d = datetime.datetime.now()
+                    message = u"{0} link '{1}' Found in yandex on page {2} with Pos = {3} summaryPos = {4} by query '{5}'\n".format(d.strftime(DATE_FORMAT),
+                                                                                                    url, str(self.iPage),posInPage, str(posInPages), self.query)
+                    ###file.write(message.encode('utf8'))
+                    ###writeUiLog(fUiLog=fUiLog, searcher="Yandex", qry=query, page_cnt=posInPage, all_cnt=posInPages, ref=link)
+                    logging.debug(message)
+                    break
+            i += 1
+        return bFound
+
+    def searchSite(self, xpath_query, url, link):
+        bFound = False
+        href = None
+        try:
+            sites = self.browser.find_elements_by_xpath(xpath_query.format(url))
+        except:
+            logging.error(u"Error in find_elements_by_xpath by url='{0}'".format(url))
+            sites = None
+        for site in sites:
+            try:
+                href = site.get_attribute("href")
+                ActionChains(self.browser) \
+                    .move_to_element(site) \
+                    .send_keys_to_element(site, Keys.ENTER) \
+                    .perform()
+                time.sleep(2)
+                handle = self.browser.window_handles[1]
+                self.browser.switch_to_window(handle)
+                self.findInSite(link=link)
+                self.browser.switch_to_window(self.browser.window_handles[0])
+                bFound = True
+                break
+            except:
+                # TODO change print to syslog
+                bFound = True
+                try:
+                    self.browser.switch_to_window(self.browser.window_handles[0])
+                except:
+                    logging.error("Error switching window on Serach site")
+                message = "ERROR Cannot click {0} by link {1}\n".format(url, link)
+                ###file.write(message.encode("utf8"))
+                logging.error(message.encode("utf8"))
+                break
+        return {"res":bFound,"href":href}
+
+    def findInSite(self, link):
+        self.movesOnPage()
+        site = self.browser.find_element_by_xpath(u"//a[@href='{0}']".format(link))
+        try:
+            ActionChains(self.browser) \
+                .move_to_element(site) \
+                .send_keys_to_element(site, Keys.ENTER) \
+                .perform()
+            self.movesOnPage()
+        except:
+            # TODO change print to syslog
+            logging.error("Cannot click " + link + "!")
+
+    def movesOnPage(self):
+        MAX_DOWN_TIME = 10
+        for i in range(0, MAX_DOWN_TIME):
+            self.browser.execute_script("window.scrollTo(0, " + str(100 * i) + ");")
+            # TODO replace 20 -> 60
+            time.sleep(20 / MAX_DOWN_TIME)
+
 
 def loadSettings():
     json_data = None
