@@ -6,6 +6,8 @@
 class TableViewClicked : public QTableWidget
 {
     Q_OBJECT
+private:
+    const bool isEmptyRow(int);
 public:
     explicit TableViewClicked(QWidget *parent = 0);
     void keyPressEvent (QKeyEvent * e);

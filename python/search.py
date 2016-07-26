@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import time
 import datetime
 
@@ -18,6 +19,7 @@ class NeedRestartTor(Exception):
 
 class Search:
     logger = None
+    ui_log = None
     browser = None
     profile = None
     query = None
@@ -38,6 +40,7 @@ class Search:
         self.link = query["site_url"]
         self.browser = None
         self.MAX_SERACHED_PAGE = max_pages
+        self.ui_log = open(os.getenv('COUNTER_SETTINGS_PATH','') + "ui.log", "a")
 
     def __enter__(self):
         return self
@@ -45,11 +48,20 @@ class Search:
     def destroy(self):
         self.browser.stop_client()
         self.browser.quit()
+        self.ui_log.close()
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.logger.info("__exit__")
         self.destroy()
 
+    def writeUiLog(self, searcher, qry, page_cnt, all_cnt, ref):
+        dt = d = datetime.datetime.now()
+        self.ui_log.write("{0} | ".format(d.strftime(DATE_FORMAT)))
+        self.ui_log.write("{0} | ".format(searcher.encode("utf8")))
+        self.ui_log.write("{0} | ".format(qry.encode("utf8")))
+        self.ui_log.write("{0} | ".format(page_cnt))
+        self.ui_log.write("{0} | ".format(all_cnt))
+        self.ui_log.write("{0}\n".format(ref.encode("utf8")))
 
     def clean(self):
         """Reset values to default"""
@@ -202,7 +214,7 @@ class Search:
                         d.strftime(DATE_FORMAT),
                         url, str(self.iPage), posInPage, str(posInPages), self.query)
                     ###file.write(message.encode('utf8'))
-                    ###writeUiLog(fUiLog=fUiLog, searcher="Yandex", qry=query, page_cnt=posInPage, all_cnt=posInPages, ref=link)
+                    self.writeUiLog(searcher="Yandex", qry=self.query, page_cnt=posInPage, all_cnt=posInPages, ref=self.link)
                     self.logger.debug(message)
                     break
             i += 1
