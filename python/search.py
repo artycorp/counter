@@ -49,13 +49,14 @@ class Search:
         self.browser.stop_client()
         self.browser.quit()
         self.ui_log.close()
+        self.ui_log = None
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.logger.info("__exit__")
         self.destroy()
 
     def writeUiLog(self, searcher, qry, page_cnt, all_cnt, ref):
-        dt = d = datetime.datetime.now()
+        d = datetime.datetime.now()
         self.ui_log.write("{0} | ".format(d.strftime(DATE_FORMAT)))
         self.ui_log.write("{0} | ".format(searcher.encode("utf8")))
         self.ui_log.write("{0} | ".format(qry.encode("utf8")))
@@ -69,6 +70,7 @@ class Search:
         self.cntElems = 0
 
     def restart(self):
+        self.ui_log = open(os.getenv('COUNTER_SETTINGS_PATH', '') + "ui.log", "a")
         return self.needRestart
 
     def restartTor(self):
@@ -182,6 +184,9 @@ class Search:
             self.nextPage()
             if self.check_errors():
                 raise NeedRestartTor("Search")
+
+        self.writeUiLog(searcher="Not found Yandex", qry=self.query, page_cnt=-1, all_cnt=self.MAX_SERACHED_PAGE,
+                                ref=self.link)
         #print("not found!!!\n")
 
     def searchOnPage(self, xpath):
