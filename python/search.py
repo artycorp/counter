@@ -4,7 +4,7 @@
 import os
 import time
 import datetime
-
+import traceback
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -46,10 +46,15 @@ class Search:
         return self
 
     def destroy(self):
-        self.browser.stop_client()
-        self.browser.quit()
+        try:
+            if not (self.browser is None):
+                self.browser.stop_client()
+                self.browser.quit()
+        except Exception as err:
+            traceback.print_exc()
         self.ui_log.close()
         self.ui_log = None
+        self.browser = None
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.logger.info("__exit__")
@@ -185,6 +190,7 @@ class Search:
             if self.check_errors():
                 raise NeedRestartTor("Search")
 
+        self.needRestart = False
         self.writeUiLog(searcher="Not found Yandex", qry=self.query, page_cnt=-1, all_cnt=self.MAX_SERACHED_PAGE,
                                 ref=self.link)
         #print("not found!!!\n")
