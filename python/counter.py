@@ -60,8 +60,9 @@ def main():
                              ya.initYandex()
                              ya.Search()
                          except NeedRestartTor as err:
-                                 ya.destroy()
                                  print(err.message)
+                         ya.destroy()
+
                     #         #time.sleep(10)
             except Exception as err:
                 traceback.print_exc()

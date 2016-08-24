@@ -7,7 +7,7 @@
 #include <qjson/parser.h>
 #include <qjson/serializer.h>
 #include <QTableWidget>
-
+#include<QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -40,7 +40,8 @@ void ReadJson(QTableWidget* table)
     file.close();
     //qDebug() << res;
 
-    if (ok){
+    if (ok){        
+        table->setRowCount(0);
         int i = 0;
         foreach(QVariant search_text, res["search_texts"].toList()){
             int j = 0;
@@ -104,9 +105,10 @@ void InsertCol(QTableWidget* table, int index, const QString& txt)
 
 void MainWindow::showEvent(QShowEvent *event)
 {
-    //qDebug() << ui->tableWidget->objectName();
+    qDebug() << "Show event";
     QTableWidget* table = (ui->tableWidget);
-
+    table->clear();
+    table->setRowCount(0);
     table->setColumnCount(3);
 
     InsertCol(table, 0,QString("text"));
@@ -136,6 +138,11 @@ void MainWindow::on_btRemove_clicked()
 void MainWindow::on_btSave_clicked()
 {
     WriteJson(ui->tableWidget);
+    QMessageBox msgBox;
+    msgBox.setIcon(QMessageBox::Information);
+    msgBox.setText("Success save");
+
+    msgBox.exec();
 }
 
 void MainWindow::on_btRun_clicked()
