@@ -61,7 +61,7 @@ def main():
                              ya.Search()
                          except NeedRestartTor as err:
                                  print(err.message)
-                         ya.destroy()
+                     ya.destroy()
 
                     #         #time.sleep(10)
             except Exception as err:
