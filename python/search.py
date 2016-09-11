@@ -114,21 +114,26 @@ class Search:
             raise NeedRestartTor("setRegion")
 
         # checkbox
-        elem = self.browser.find_element_by_id("auto")
+        elem = self.browser.find_element_by_xpath("//input[@name='auto']")
         elem.click()
 
         region = self.browser.find_element_by_xpath("//input[@name='name']")
 
         region.clear()
-        time.sleep(3)
 
         ActionChains(self.browser) \
             .move_to_element(region) \
             .click(region) \
             .send_keys_to_element(region, self.CITY) \
-            .send_keys_to_element(region, Keys.ENTER) \
+            .perform()
+
+        time.sleep(3)
+
+        ActionChains(self.browser) \
+            .move_to_element(region) \
             .click(region) \
-            .double_click(region) \
+            .send_keys_to_element(region, Keys.DOWN) \
+            .send_keys(Keys.ENTER) \
             .perform()
 
     def initYandex(self):
@@ -148,7 +153,7 @@ class Search:
 
     def submitRegion(self):
         """push submit region button"""
-        btn = self.browser.find_element_by_xpath("//input[@type='submit']")
+        btn = self.browser.find_element_by_xpath("//button[@type='submit']")
 
         try:
             ActionChains(self.browser) \
