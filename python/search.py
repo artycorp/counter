@@ -52,8 +52,9 @@ class Search:
                 self.browser.quit()
         except Exception as err:
             traceback.print_exc()
-        self.ui_log.close()
-        self.ui_log = None
+        if not self.ui_log is None:
+            self.ui_log.close()
+            self.ui_log = None
         self.browser = None
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -127,7 +128,7 @@ class Search:
             .send_keys_to_element(region, self.CITY) \
             .perform()
 
-        time.sleep(3)
+        time.sleep(5)
 
         ActionChains(self.browser) \
             .move_to_element(region) \
@@ -144,11 +145,16 @@ class Search:
         self.browser.get('https://www.yandex.ru/')
         if self.check_errors():
             raise NeedRestartTor("initYandex")
-
-        self.setRegion()
-        time.sleep(5)
-        self.submitRegion()
-        time.sleep(3)
+        needRestart = True
+        i = 0
+        while needRestart:
+            self.setRegion()
+            time.sleep(5)
+            needRestart = self.submitRegion()
+            time.sleep(3)
+            i = i + 1
+            if i == 20:
+                raise Exception("Forever loop in initYandex")
 
 
     def submitRegion(self):
@@ -162,6 +168,8 @@ class Search:
                 .perform()
         except:
             self.logger.error("Submit Region error")
+            return True # need restart set region
+        return False
 
     # search query string in yandex
     def findQueryYA(self):
@@ -206,6 +214,8 @@ class Search:
         while i < 2 and not bFound:
             self.browser.execute_script("window.scrollTo(0, " + str(200 * i) + ");")
             for url in self.urls:
+                if url.strip() == u'':
+                    continue
                 posInPage = -1
                 try:
                     #class ,'serp-item') and @ data-cid]
@@ -237,7 +247,7 @@ class Search:
         return bFound
 
     def nextPage(self):
-        nexts = self.browser.find_elements_by_xpath(u"//a[contains(text(),'дал')]")
+        nexts = self.browser.find_elements_by_xpath(u"//a[contains(text(),'дальше')]")
         try:
             for next in nexts:
                 ActionChains(self.browser) \
