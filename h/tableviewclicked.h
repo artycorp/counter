@@ -2,15 +2,15 @@
 #define TABLEVIEWCLICKED_H
 
 #include <QTableWidget>
+#include <QTableView>
 
-class TableViewClicked : public QTableWidget
+class TableViewClicked : public QTableView
 {
     Q_OBJECT
 private:
     const bool isEmptyRow(const int);
 public:
     explicit TableViewClicked(QWidget *parent = 0);
-    void keyPressEvent (QKeyEvent * e);
     void AddRow();
     void RemoveRow();
 signals:

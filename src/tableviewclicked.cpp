@@ -4,49 +4,27 @@
 #include <QMessageBox>
 
 TableViewClicked::TableViewClicked(QWidget *parent) :
-    QTableWidget(parent)
+    QTableView(parent)
 {
-}
-
-void TableViewClicked::keyPressEvent(QKeyEvent *e)
-{
-
-
-    switch(e->key())
-    {
-        case Qt::Key_Insert:
-            AddRow();
-            break;
-            case Qt::Key_Delete:
-                RemoveRow();
-            break;
-    }
-    QTableWidget::keyPressEvent(e);
-}
-
-//TODO fix! copy/past
-QTableWidgetItem* initValue()
-{
-    QTableWidgetItem* item = new QTableWidgetItem();
-    item->setTextAlignment(Qt::AlignCenter | Qt::AlignVCenter);
-    return item;
 }
 
 void TableViewClicked::AddRow()
 {
-    int cntRow = this->rowCount();
-    this->insertRow(cntRow);
 
-    for (int i=0;i<colorCount();i++){
-        setItem(cntRow,i,initValue());
-    }
+    auto* model =  this->model();
+    int cntRow = model->rowCount();
+    model->insertRow(cntRow);
+
+    //for (int i=0;i<colorCount();i++){
+    //    setItem(cntRow,i,initValue());
+    //}
 }
 
 const bool TableViewClicked::isEmptyRow(const int rowNum){
-    int cntCol = this->columnCount();
+    int cntCol = model()->columnCount();
     bool bIsNotEmpty = false;
     for (int i=0;i<cntCol;i++){
-        QTableWidgetItem* ptr = this->item(rowNum,i);
+        QTableWidgetItem* ptr = model()->item(rowNum,i);
         if (ptr)
         {
             QString txt = ptr->text();
@@ -76,16 +54,8 @@ void TableViewClicked::RemoveRow()
 
             if (reply == QMessageBox::Yes){
 
-                this->removeRow(rowNum);
+                this->model()->removeRow(rowNum);
             }
         }
     }
-
-
-    /*
-    else{
-        this->setRowCount(cntRow >0 ? cntRow -1 : 0);
-    }
-    */
 }
-

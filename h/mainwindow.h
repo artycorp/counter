@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 #include <QProcess>
+#include <QTableView>
+#include <QtSql>
 
 namespace Ui {
 class MainWindow;
@@ -34,8 +36,10 @@ private slots:
     void on_toolButton_clicked();
 
 private:
+    void setupModel(QTableView* table);
     Ui::MainWindow *ui;
     QProcess p;
+    QSqlDatabase db;
 };
 
 #endif // MAINWINDOW_H
