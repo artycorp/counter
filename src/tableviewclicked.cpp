@@ -20,18 +20,15 @@ void TableViewClicked::AddRow()
     //}
 }
 
-const bool TableViewClicked::isEmptyRow(const int rowNum){
+const bool TableViewClicked::isEmptyRow(const int rowNum,const int startColNum){
     int cntCol = model()->columnCount();
     bool bIsNotEmpty = false;
-    for (int i=0;i<cntCol;i++){
-        QTableWidgetItem* ptr = model()->item(rowNum,i);
-        if (ptr)
-        {
-            QString txt = ptr->text();
-            if (! txt.isEmpty()){
+    for (int i=startColNum;i<cntCol;i++){
+        auto idx = model()->index(rowNum,i);
+        QString txt = model()->data(idx).toString();
+        if (! txt.isEmpty()){
                 bIsNotEmpty = true;
                 break;
-            }
         }
     }
     return !bIsNotEmpty;
@@ -48,7 +45,8 @@ void TableViewClicked::RemoveRow()
         QModelIndex index = selection.at(i-1);
 
         rowNum = index.row();
-        if (!isEmptyRow(rowNum)){
+        /*skip first collumn because is autoincrement*/
+        if (!isEmptyRow(rowNum,1)){
             QMessageBox::StandardButton reply;
             reply = QMessageBox::question(this,  QString::fromUtf8("Удаление строки"), QString::fromUtf8("Удалить не пустую строку?"),QMessageBox::Yes | QMessageBox::No);
 
@@ -57,5 +55,8 @@ void TableViewClicked::RemoveRow()
                 this->model()->removeRow(rowNum);
             }
         }
+        else
+            this->model()->removeRow(rowNum);
+        this->hideRow(rowNum);
     }
 }

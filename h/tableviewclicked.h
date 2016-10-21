@@ -8,7 +8,7 @@ class TableViewClicked : public QTableView
 {
     Q_OBJECT
 private:
-    const bool isEmptyRow(const int);
+    const bool isEmptyRow(const int,const int = 0);
 public:
     explicit TableViewClicked(QWidget *parent = 0);
     void AddRow();
